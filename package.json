@@ -1,0 +1,34 @@
+{
+  "name": "discord-webapi",
+  "version": "1.0.0",
+  "description": "Easily interact with discord's API",
+  "main": "index.js",
+  "scripts": {
+    "lint": "prettier-eslint ./**/*.js --list-different",
+    "fix": "prettier-eslint ./**/*.js --write"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SvalTek/discord-webhelper.git"
+  },
+  "keywords": [
+    "api",
+    "discord",
+    "discordapp",
+    "oauth2"
+  ],
+  "author": "theros",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/SvalTek/discord-webhelper/issues"
+  },
+  "homepage": "https://github.com/SvalTek/discord-webhelper#readme",
+  "devDependencies": {
+    "eslint": "7.32.0",
+    "prettier": "^2.5.1",
+    "prettier-eslint-cli": "^5.0.1"
+  },
+  "dependencies": {
+    "discord-oauth2": "^2.9.0"
+  }
+}
