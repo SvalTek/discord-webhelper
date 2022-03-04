@@ -1,6 +1,6 @@
 // Copyright (C) 2022 Theros [SvalTek|MisModding]
 //
-// This file is part of discord-oauth2.
+// This file is part of discord-webapi.
 //
 // discord-oauth2 is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -59,7 +59,6 @@ class Discord extends RequestHandler {
 		this.client_id = opts.clientId;
 		this.client_secret = opts.clientSecret;
 		this.redirect_uri = opts.redirectUri;
-		this.credentials = opts.credentials;
 	}
 
 	_encode(obj) {
@@ -148,22 +147,22 @@ class Discord extends RequestHandler {
 	 * 	@arg {String} opts.botToken The token of the bot used to authenticate
 	 * @returns {Promise<Object | String>}
 	*/
-	async _getGuild(guildId) {
+	async _getGuild(opts) {
 		return this.request(
 			"GET",
-			GUILD(guildId),
+			GUILD(opts.guildId),
 			{},
 			{
 				auth: {
 					type: "Bot",
-					creds: this.credentials,
+					creds: opts.botToken,
 				},
 				contentType: "application/json",
 			},
 		);
 	}
 
-	CuidCacheTimeout = 10000;
+	GuildCacheTimeout = 10000;
 	// Array of Guilds used to cache requests
 	GuildCache = [];
 
@@ -171,21 +170,19 @@ class Discord extends RequestHandler {
 	// manages, guild entries in the cache, by keeping an array with lastUpdated times
 	// and a map of guilds, if the guild is in the cache, it will return the cached guild unless
 	// our specified timout has passed, in which case it will return a new guild, and update the cache.
-	async Guild(guildId) {
+	async getGuild(opts) {
+		const { guildId } = opts;
 		// Check if the guild is in the cache
 		if (this.GuildCache[guildId]) {
 			// Check if the cached guild is still valid
-			if (
-				Date.now() - this.GuildCache[guildId].lastUpdated <
-				this.CuidCacheTimeout
-			) {
+			if (Date.now() - this.GuildCache[guildId].lastUpdated > this.GuildCacheTimeout) {
 				// Return the cached guild
 				return this.GuildCache[guildId].guild;
 			}
 		}
 
 		// If the guild is not in the cache, or the cached guild is invalid, fetch it from discord
-		const guild = await this._getGuild(guildId);
+		const guild = await this._getGuild(opts);
 
 		// Update the cache
 		this.GuildCache[guildId] = {
@@ -197,22 +194,37 @@ class Discord extends RequestHandler {
 		return guild;
 	}
 
-
-	/**
+	/** Fetch All Guilds this bot is in
 	 * @arg {Object} opts
-	 * @arg {String} opts.guildId The ID of the guild
 	 * @arg {String} opts.botToken The token of the bot used to authenticate
 	 * @returns {Promise<Object | String>}
 	*/
-	async cacheGuildInfo(opts) {
-		let GuildInfo = {};
+	async getAllGuilds(opts) {
+		const { botToken } = opts;
+		const guilds = await this.request(
+			"GET",
+			USER_GUILDS('@me'),
+			{},
+			{
+				auth: {
+					type: "Bot",
+					creds: botToken,
+				},
+				contentType: "application/json",
+			},
+		);
 
-		let guild = await getGuild(opts).then((result) => {
-			if (result.status === 200) {
-				GuildInfo = result.body;
-			}
-		});
+		// add the guilds to the cache
+		for (const guild of guilds) {
+			this.GuildCache[guild.id] = {
+				guild,
+				lastUpdated: Date.now(),
+			};
+		}
+
+		return guilds;
 	}
+
 }
 
 module.exports = {
